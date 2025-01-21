@@ -1,0 +1,119 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+<constant value="0" name="STOPPED"/>
+<constant value="250" name="TARGET"/>
+<constant value="1" name="BACK"/>
+<constant value="1460" name="TURN_PERIOD"/>
+<constant value="2" name="ROTATE"/>
+<constant value="3" name="FWD"/>
+<constant value="670" name="BACK_PERIOD"/>
+<constant value="3500" name="PROX_VALUE"/>
+<constant value="3200" name="THRESHOLD"/>
+<constant value="20" name="BLACK_LINE"/>
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">var state = STOPPED
+var sensors[4]
+var i
+timer.period[0]=0
+
+
+
+onevent button.forward
+state = FWD
+motor.right.target = TARGET
+motor.left.target = TARGET
+
+onevent button.backward
+state = STOPPED
+motor.right.target = 0
+motor.left.target = 0
+
+onevent prox
+if  state==FWD and prox.ground.delta[0] &lt; BLACK_LINE and prox.ground.delta[1] > BLACK_LINE then
+	motor.left.target=0
+	motor.right.target=TARGET
+else if state==FWD  and prox.ground.delta[1] &lt; BLACK_LINE and prox.ground.delta[0] > BLACK_LINE then
+	motor.left.target=TARGET
+	motor.right.target=0
+	
+	end
+end
+if prox.ground.delta[0] &lt; BLACK_LINE and prox.ground.delta[1] &lt; BLACK_LINE and prox.horizontal[2]>600 then
+state = BACK
+motor.left.target = -TARGET
+motor.right.target = -TARGET
+timer.period[0] = BACK_PERIOD
+
+
+end
+
+if (prox.horizontal[1] > PROX_VALUE or prox.horizontal[3] > PROX_VALUE) and state != STOPPED and state!= ROTATE then
+for i in 1:3  do
+	call math.fill(sensors[i],prox.horizontal[i])
+	end
+end
+
+if  sensors[1] > THRESHOLD  and timer.period[0]==0 and state != STOPPED and state !=ROTATE  then
+	state = ROTATE
+	motor.left.target=0
+	motor.right.target = TARGET
+	timer.period[0] = TURN_PERIOD
+	
+
+else if  sensors[3] > THRESHOLD  and timer.period[0]==0  and state != STOPPED and state !=ROTATE then
+	state = ROTATE
+	motor.left.target= TARGET
+	motor.right.target = 0
+	timer.period[0] = TURN_PERIOD
+	
+else if sensors[2] > THRESHOLD  and timer.period[0]==0  and state != STOPPED and state !=ROTATE then
+	state = ROTATE
+	motor.left.target= -TARGET
+	motor.right.target = TARGET
+	timer.period[0] = TURN_PERIOD
+	end
+end
+end
+
+onevent timer0
+if state==BACK then
+  motor.left.target = 0 
+ motor.right.target = 0
+ timer.period[0] = 0
+ else if state == ROTATE then
+   motor.left.target = TARGET 
+ 	motor.right.target = TARGET
+ 	
+	end
+end
+
+
+
+
+
+
+		
+
+	
+	
+	
+
+
+
+
+</node>
+
+
+</network>
